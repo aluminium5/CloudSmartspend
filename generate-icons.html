@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head><title>Icon Generator</title></head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+sizes.forEach(size => {
+  canvas.width = size;
+  canvas.height = size;
+  
+  // Gradient background
+  const grad = ctx.createLinearGradient(0, 0, size, size);
+  grad.addColorStop(0, '#4F46E5');
+  grad.addColorStop(1, '#7C3AED');
+  
+  // Rounded rect
+  const r = size * 0.18;
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(size - r, 0);
+  ctx.quadraticCurveTo(size, 0, size, r);
+  ctx.lineTo(size, size - r);
+  ctx.quadraticCurveTo(size, size, size - r, size);
+  ctx.lineTo(r, size);
+  ctx.quadraticCurveTo(0, size, 0, size - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+  
+  // Chart line
+  const s = size / 512;
+  ctx.beginPath();
+  ctx.moveTo(120*s, 340*s);
+  ctx.lineTo(200*s, 280*s);
+  ctx.lineTo(280*s, 310*s);
+  ctx.lineTo(400*s, 180*s);
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = Math.max(3, 28*s);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  
+  // Dot at end
+  ctx.beginPath();
+  ctx.arc(400*s, 180*s, Math.max(3, 16*s), 0, Math.PI*2);
+  ctx.fillStyle = 'white';
+  ctx.fill();
+  
+  // Area fill
+  ctx.beginPath();
+  ctx.moveTo(120*s, 340*s);
+  ctx.lineTo(200*s, 280*s);
+  ctx.lineTo(280*s, 310*s);
+  ctx.lineTo(400*s, 180*s);
+  ctx.lineTo(400*s, 380*s);
+  ctx.lineTo(120*s, 380*s);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.fill();
+  
+  // Download
+  const link = document.createElement('a');
+  link.download = `icon-${size}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
+
+document.body.innerHTML = '<h2 style="font-family:sans-serif;text-align:center;margin-top:40px">✅ All icons generated! Check your downloads folder.<br>Move them to assets/icons/ folder.</h2>';
+</script>
+</body>
+</html>
