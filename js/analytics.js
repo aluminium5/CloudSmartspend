@@ -42,36 +42,29 @@ const Analytics = (() => {
     const allTx = DataStore.getTransactions();
     if (allTx.length === 0) return;
 
+    const now = new Date();
+    
+    // Find absolute first transaction to determine user "age" in the app
+    let firstTxDate = new Date();
+    allTx.forEach(t => {
+      const d = new Date(t.date);
+      if (d < firstTxDate) firstTxDate = d;
+    });
+    const daysSinceStart = Math.max(1, Math.ceil((now - firstTxDate) / (1000 * 60 * 60 * 24)));
+
     // Daily average (last 30 days)
     const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setDate(now.getDate() - 30);
     const last30 = allTx.filter(t => new Date(t.date) >= thirtyDaysAgo);
-    
-    let oldest30Date = new Date();
-    last30.forEach(t => {
-      const d = new Date(t.date);
-      if (d < oldest30Date) oldest30Date = d;
-    });
-    const days30 = Math.max(1, Math.ceil((new Date() - oldest30Date) / (1000 * 60 * 60 * 24)));
     const total30 = last30.reduce((sum, t) => sum + t.amount, 0);
-    const dailyAvg = Math.round(total30 / days30);
+    const dailyAvg = Math.round(total30 / Math.min(30, daysSinceStart));
 
-    // Monthly average (last 3 months)
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-    const recentTx = allTx.filter(t => new Date(t.date) >= threeMonthsAgo);
-    
-    let oldest90Date = new Date();
-    recentTx.forEach(t => {
-      const d = new Date(t.date);
-      if (d < oldest90Date) oldest90Date = d;
-    });
-    
-    const days90 = Math.max(1, Math.ceil((new Date() - oldest90Date) / (1000 * 60 * 60 * 24)));
+    // Monthly average (last 90 days scaled to 30)
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(now.getDate() - 90);
+    const recentTx = allTx.filter(t => new Date(t.date) >= ninetyDaysAgo);
     const totalRecent = recentTx.reduce((sum, t) => sum + t.amount, 0);
-    
-    // Calculate accurate monthly average by scaling the daily spend over this period
-    const monthlyAvg = Math.round((totalRecent / days90) * 30);
+    const monthlyAvg = Math.round((totalRecent / Math.min(90, daysSinceStart)) * 30);
 
     const monthlyEl = document.getElementById('analytics-monthly-avg');
     const dailyEl = document.getElementById('analytics-daily-avg');
