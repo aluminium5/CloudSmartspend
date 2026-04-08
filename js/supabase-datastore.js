@@ -330,8 +330,19 @@ const DataStore = (() => {
   }
 
   function clearAllData() {
-    Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+    // Preserve the user session so we don't revert to demo mode
+    const currentUser = localStorage.getItem(STORAGE_KEYS.USER);
+    
+    // Remove transaction, budget, and settings data
+    localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+    localStorage.removeItem(STORAGE_KEYS.BUDGETS);
+    localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+    
+    // Remove bill images
     Object.keys(localStorage).forEach(key => { if (key.startsWith('css_bill_')) localStorage.removeItem(key); });
+    
+    // Restore user session
+    if (currentUser) localStorage.setItem(STORAGE_KEYS.USER, currentUser);
   }
   
   // ---- Supabase Auth Wrappers ----
