@@ -160,43 +160,73 @@ const Utils = (() => {
 
   // ---- OCR Text Parsing ----
   function parseAmountFromText(text) {
-    // Match various currency patterns
-    const patterns = [
-      /(?:total|amount|grand\s*total|net\s*(?:amount|total)|payable)\s*[:\-]?\s*(?:Rs\.?|₹|INR|USD|\$)?\s*([\d,]+\.?\d*)/gi,
-      /(?:Rs\.?|₹|INR)\s*([\d,]+\.?\d*)/gi,
-      /\$\s*([\d,]+\.?\d*)/gi,
-      /(?:total|amount)\s*[:\-]?\s*([\d,]+\.?\d{2})/gi
-    ];
+    const lines = text.split('\n');
+    let maxFound = 0;
 
-    let maxAmount = 0;
-    for (const pattern of patterns) {
-      let match;
-      while ((match = pattern.exec(text)) !== null) {
-        const amount = parseFloat(match[1].replace(/,/g, ''));
-        if (amount > maxAmount && amount < 10000000) {
-          maxAmount = amount;
-        }
+    // 1. Look for explicit total lines
+    const keywords = ['total', 'amount', 'amt', 'payable', 'net', 'sum', 'due', 'paid', 'cash', 'card', 'upi'];
+    for (let line of lines) {
+      const lower = line.toLowerCase();
+      const hasKeyword = keywords.some(k => lower.includes(k));
+      if (hasKeyword) {
+         // Find all explicit decimals on this line first, else integers
+         const nums = line.match(/\b\d+[\.,]\d{2}\b/g) || line.match(/\b\d+\b/g);
+         if (nums) {
+             nums.forEach(n => {
+                const valStr = n.replace(/,/g, '');
+                const val = parseFloat(valStr);
+                if (val > maxFound && val < 500000) maxFound = val;
+             });
+         }
       }
     }
-    return maxAmount || null;
+    if (maxFound > 0) return maxFound;
+
+    // 2. Look for any exact currency symbol anywhere
+    const curPatterns = /(?:rs\.?|₹|inr|\$|usd|eur|€|£)\s*([\d,]+\.?\d*)/gi;
+    let match;
+    while ((match = curPatterns.exec(text)) !== null) {
+        const val = parseFloat(match[1].replace(/,/g, ''));
+        if (val > maxFound && val < 500000) maxFound = val;
+    }
+    if (maxFound > 0) return maxFound;
+
+    // 3. Fallback: Largest number with exactly two decimal places (e.g. 150.00)
+    // This safely avoids phone numbers and GSTINs
+    const decimals = text.match(/\b\d{1,5}\.\d{2}\b/g);
+    if (decimals) {
+       decimals.forEach(n => {
+           const val = parseFloat(n);
+           if (val > maxFound && val < 500000) maxFound = val;
+       });
+       if (maxFound > 0) return maxFound;
+    }
+
+    return null;
   }
 
   function parseDateFromText(text) {
     const patterns = [
       /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/,
       /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{2,4})/i,
-      /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{1,2}),?\s+(\d{2,4})/i
+      /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{1,2})[,\s]+(\d{2,4})/i,
+      // YYYY-MM-DD
+      /(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/
     ];
 
     for (const pattern of patterns) {
       const match = text.match(pattern);
       if (match) {
         let dateStr = match[0];
-        const parsed = new Date(dateStr);
-        if (!isNaN(parsed.getTime())) {
-          return parsed;
+        
+        // Handle YYYY-MM-DD
+        if (/^\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}$/.test(dateStr)) {
+            const parts = dateStr.split(/[\/\-\.]/);
+            const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            if (!isNaN(d.getTime())) return d;
         }
-        // Try DD/MM/YYYY format
+
+        // Handle DD-MM-YYYY
         if (/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/.test(dateStr)) {
           const parts = dateStr.split(/[\/\-\.]/);
           const day = parseInt(parts[0]);
@@ -206,21 +236,40 @@ const Utils = (() => {
           const d = new Date(year, month, day);
           if (!isNaN(d.getTime())) return d;
         }
+
+        const parsed = new Date(dateStr);
+        if (!isNaN(parsed.getTime())) return parsed;
       }
     }
     return null;
   }
 
   function parseVendorFromText(text) {
-    const lines = text.split('\n').filter(l => l.trim().length > 2);
-    if (lines.length > 0) {
-      // First non-empty line is often the vendor name
-      let vendor = lines[0].trim();
-      // Clean up common OCR artifacts
-      vendor = vendor.replace(/[^a-zA-Z0-9\s&\-'.]/g, '').trim();
-      if (vendor.length > 2 && vendor.length < 60) {
-        return vendor;
-      }
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+    
+    // Vendor is usually in the first 1-3 lines.
+    // Skip lines with words that indicate it's not a brand name
+    const skipKeywords = ['tax', 'invoice', 'receipt', 'bill', 'date', 'time', 'store', 'cash', 'tel', 'ph', 'gst', 'tin', 'fssai', 'no.', 'order'];
+    
+    for (let i = 0; i < Math.min(8, lines.length); i++) {
+       let line = lines[i];
+       const lower = line.toLowerCase();
+       
+       if (skipKeywords.some(k => lower.includes(k))) continue;
+       
+       // If it has too many numbers, it's an address, zip code, or phone number
+       const numCount = (line.match(/\d/g) || []).length;
+       if (numCount > 3) continue;
+       
+       // Strip out weird extreme punctuation OCR noise
+       let cleanLine = line.replace(/[^a-zA-Z\s&'\-]/g, '').trim();
+       
+       if (cleanLine.length >= 3 && cleanLine.length <= 40) {
+          // If the line consists only of random single letters mixed with spaces (OCR glitch)
+          if (/^(\w\s)+\w$/.test(cleanLine)) continue;
+
+          return cleanLine.replace(/\b\w/g, c => c.toUpperCase());
+       }
     }
     return '';
   }
