@@ -109,17 +109,20 @@ const DataStore = (() => {
 
   function setUser(user) {
     const prevUser = getUser();
-    if (user && prevUser && prevUser.uid !== user.uid) {
-      clearAllData();
-    } else if (user && !prevUser) {
-      // Transition from guest/demo to real user
+    const newUserUid = user?.uid;
+    const prevUserUid = prevUser?.uid;
+
+    // Only clear if transitioning from demo/guest to real, or between different real users
+    if (newUserUid && (prevUserUid !== newUserUid)) {
+      console.log('User switched. Clearing local datastore for new session.');
       clearAllData();
     }
+    
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
   }
 
   function clearUser() {
-    clearAllData();
+    // We NO LONGER call clearAllData() here to prevent deleting unsynced data on logout
     localStorage.removeItem(STORAGE_KEYS.USER);
   }
 
@@ -207,17 +210,19 @@ const DataStore = (() => {
         
       if (error) throw error;
       
-      if (data) {
-        const cloudTxs = data.map(mapFromSupabaseTransaction);
-        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(cloudTxs));
-        notifyListeners('change', cloudTxs);
-      }
-      
       // Fetch budgets ONLY for this user
       const { data: bData, error: bError } = await supabaseClient.from('budgets')
         .select('*')
         .eq('user_id', user.uid);
         
+      console.log(`Cloud Data: Fetched ${data? data.length : 0} transactions, ${bData? bData.length : 0} budgets.`);
+      
+      if (data && data.length > 0) {
+        const cloudTxs = data.map(mapFromSupabaseTransaction);
+        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(cloudTxs));
+        notifyListeners('change', cloudTxs);
+      }
+      
       if (!bError && bData && bData.length > 0) {
         let b = getBudgets();
         bData.forEach(row => b[row.category] = row.amount);
@@ -363,11 +368,6 @@ const DataStore = (() => {
       options: { data: { full_name: displayName } }
     });
     if (error) throw error;
-    
-    if (data.user) {
-      clearAllData(); // Wipe demo data once account is confirmed
-      await fetchCloudData();
-    }
     return data;
   }
   
@@ -379,20 +379,12 @@ const DataStore = (() => {
     
     // Update local user object
     if (data.user) {
-      const newUser = {
+      setUser({
         uid: data.user.id,
         email: data.user.email,
         displayName: data.user.user_metadata?.full_name || email.split('@')[0],
         photoURL: null
-      };
-
-      // Only clear if switching users or from demo
-      const prevUser = getUser();
-      if (!prevUser || prevUser.uid !== newUser.uid) {
-        clearAllData();
-      }
-
-      setUser(newUser);
+      });
       await fetchCloudData(); // Pull down their cloud data
     }
     return data;
