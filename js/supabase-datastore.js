@@ -191,8 +191,12 @@ const DataStore = (() => {
     if (!user || user.uid.startsWith('demo_user')) return;
 
     try {
-      // Fetch latest transactions
-      const { data, error } = await supabaseClient.from('transactions').select('*').order('date', { ascending: false });
+      // Fetch latest transactions ONLY for this user
+      const { data, error } = await supabaseClient.from('transactions')
+        .select('*')
+        .eq('user_id', user.uid)
+        .order('date', { ascending: false });
+        
       if (error) throw error;
       
       if (data) {
@@ -201,8 +205,11 @@ const DataStore = (() => {
         notifyListeners('change', cloudTxs);
       }
       
-      // Fetch budgets
-      const { data: bData, error: bError } = await supabaseClient.from('budgets').select('*');
+      // Fetch budgets ONLY for this user
+      const { data: bData, error: bError } = await supabaseClient.from('budgets')
+        .select('*')
+        .eq('user_id', user.uid);
+        
       if (!bError && bData && bData.length > 0) {
         let b = getBudgets();
         bData.forEach(row => b[row.category] = row.amount);
