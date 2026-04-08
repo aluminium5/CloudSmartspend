@@ -108,10 +108,18 @@ const DataStore = (() => {
   }
 
   function setUser(user) {
+    const prevUser = getUser();
+    if (user && prevUser && prevUser.uid !== user.uid) {
+      clearAllData();
+    } else if (user && !prevUser) {
+      // Transition from guest/demo to real user
+      clearAllData();
+    }
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
   }
 
   function clearUser() {
+    clearAllData();
     localStorage.removeItem(STORAGE_KEYS.USER);
   }
 
@@ -337,9 +345,6 @@ const DataStore = (() => {
   }
 
   function clearAllData() {
-    // Preserve the user session so we don't revert to demo mode
-    const currentUser = localStorage.getItem(STORAGE_KEYS.USER);
-    
     // Remove transaction, budget, and settings data
     localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
     localStorage.removeItem(STORAGE_KEYS.BUDGETS);
@@ -347,44 +352,47 @@ const DataStore = (() => {
     
     // Remove bill images
     Object.keys(localStorage).forEach(key => { if (key.startsWith('css_bill_')) localStorage.removeItem(key); });
-    
-    // Restore user session
-    if (currentUser) localStorage.setItem(STORAGE_KEYS.USER, currentUser);
   }
   
   // ---- Supabase Auth Wrappers ----
   async function supabaseSignUp(email, password, displayName) {
     if (!supabaseClient) throw new Error("Supabase is not configured.");
     
-    // Clear any leftover demo data before creating a real account
-    clearAllData();
-    
     const { data, error } = await supabaseClient.auth.signUp({ 
       email, password,
       options: { data: { full_name: displayName } }
     });
     if (error) throw error;
-    if (data.session) await fetchCloudData();
+    
+    if (data.user) {
+      clearAllData(); // Wipe demo data once account is confirmed
+      await fetchCloudData();
+    }
     return data;
   }
   
   async function supabaseLogin(email, password) {
     if (!supabaseClient) throw new Error("Supabase is not configured.");
     
-    // Clear demo data before pulling real user data
-    clearAllData();
-    
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) throw error;
     
     // Update local user object
     if (data.user) {
-      setUser({
+      const newUser = {
         uid: data.user.id,
         email: data.user.email,
         displayName: data.user.user_metadata?.full_name || email.split('@')[0],
         photoURL: null
-      });
+      };
+
+      // Only clear if switching users or from demo
+      const prevUser = getUser();
+      if (!prevUser || prevUser.uid !== newUser.uid) {
+        clearAllData();
+      }
+
+      setUser(newUser);
       await fetchCloudData(); // Pull down their cloud data
     }
     return data;
@@ -397,7 +405,7 @@ const DataStore = (() => {
   async function supabaseGoogleLogin() {
     if (!supabaseClient) throw new Error("Supabase is not configured.");
     
-    clearAllData();
+    // Don't clear until we come back and confirm identity
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
     });
