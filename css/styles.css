@@ -2247,6 +2247,12 @@ h4 { font-size: 1rem; }
 [data-theme="dark"] .form-select,
 [data-theme="dark"] .form-textarea {
   background: rgba(15, 23, 42, 0.5);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-select option {
+  background: #1e293b;
+  color: var(--text-primary);
 }
 
 [data-theme="dark"] .search-bar input {
