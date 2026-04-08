@@ -387,6 +387,17 @@ const DataStore = (() => {
     if (supabaseClient) await supabaseClient.auth.signOut();
   }
 
+  async function supabaseGoogleLogin() {
+    if (!supabaseClient) throw new Error("Supabase is not configured.");
+    
+    clearAllData();
+    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+    });
+    if (error) throw error;
+    return data;
+  }
+
   return {
     SUPABASE_URL,
     SUPABASE_KEY,
@@ -403,6 +414,6 @@ const DataStore = (() => {
     onDataChange,
     clearAllData,
     generateDemoData,
-    supabaseSignUp, supabaseLogin, supabaseLogout
+    supabaseSignUp, supabaseLogin, supabaseLogout, supabaseGoogleLogin
   };
 })();

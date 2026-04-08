@@ -13,6 +13,25 @@ const Auth = (() => {
       onLoginSuccess(currentUser);
     }
     setupEventListeners();
+
+    if (DataStore.isSupabaseConfigured() && DataStore.supabase) {
+      DataStore.supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          const user = {
+            uid: session.user.id,
+            email: session.user.email,
+            displayName: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
+            photoURL: session.user.user_metadata?.avatar_url || null
+          };
+          // Only process if we aren't already logged in as this user
+          if (!currentUser || currentUser.uid !== user.uid) {
+            DataStore.setUser(user);
+            currentUser = user;
+            onLoginSuccess(user);
+          }
+        }
+      });
+    }
   }
 
   function setupEventListeners() {
@@ -126,6 +145,19 @@ const Auth = (() => {
     Utils.showToast('Welcome to the demo! 🎉', 'success');
   }
 
+  async function handleGoogleLogin() {
+    if (DataStore.isSupabaseConfigured()) {
+      try {
+        await DataStore.supabaseGoogleLogin();
+        Utils.showToast('Redirecting to Google...', 'info');
+      } catch (e) {
+        Utils.showToast(e.message || 'Google login failed', 'danger');
+      }
+    } else {
+      demoLogin();
+    }
+  }
+
   function onLoginSuccess(user) {
     currentUser = user;
 
@@ -222,6 +254,7 @@ const Auth = (() => {
     init,
     handleEmailLogin,
     handleSignup,
+    handleGoogleLogin,
     demoLogin,
     logout,
     showLogin,
