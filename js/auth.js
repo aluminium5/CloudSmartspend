@@ -34,33 +34,50 @@ const Auth = (() => {
     }
   }
 
-  function handleEmailLogin() {
+  async function handleEmailLogin() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
 
     if (!email || !password) {
       Utils.showToast('Please fill in all fields', 'warning');
       return;
     }
 
-    // Demo mode: accept any credentials
-    const user = {
-      uid: 'user_' + btoa(email).substring(0, 10),
-      displayName: email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      email: email,
-      photoURL: null
-    };
-
-    DataStore.setUser(user);
-    currentUser = user;
-    onLoginSuccess(user);
-    Utils.showToast('Welcome back! 👋', 'success');
+    if (DataStore.isSupabaseConfigured()) {
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+      try {
+        await DataStore.supabaseLogin(email, password);
+        currentUser = DataStore.getUser();
+        onLoginSuccess(currentUser);
+        Utils.showToast('Welcome back! 👋', 'success');
+      } catch (e) {
+        Utils.showToast(e.message || 'Login failed', 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    } else {
+      // Demo mode fallback
+      const user = {
+        uid: 'demo_user_' + btoa(email).substring(0, 5),
+        displayName: email.split('@')[0],
+        email: email,
+        photoURL: null
+      };
+      DataStore.setUser(user);
+      currentUser = user;
+      onLoginSuccess(user);
+      Utils.showToast('Demo Login active', 'success');
+    }
   }
 
-  function handleSignup() {
+  async function handleSignup() {
     const name = document.getElementById('signup-name').value.trim();
     const email = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
+    const btn = document.getElementById('signup-btn');
 
     if (!name || !email || !password) {
       Utils.showToast('Please fill in all fields', 'warning');
@@ -71,22 +88,34 @@ const Auth = (() => {
       Utils.showToast('Password must be at least 6 characters', 'warning');
       return;
     }
+    
+    if (DataStore.isSupabaseConfigured()) {
+      btn.disabled = true;
+      btn.textContent = 'Creating account...';
+      try {
+        await DataStore.supabaseSignUp(email, password, name);
+        Utils.showToast('Account created! Please verify your email (or sign in if verification is disabled)', 'success');
+        showLogin();
+      } catch (e) {
+        Utils.showToast(e.message || 'Signup failed', 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    } else {
+      const user = {
+        uid: 'demo_user_' + btoa(email).substring(0, 5),
+        displayName: name,
+        email: email,
+        photoURL: null
+      };
 
-    const user = {
-      uid: 'user_' + btoa(email).substring(0, 10),
-      displayName: name,
-      email: email,
-      photoURL: null
-    };
-
-    DataStore.setUser(user);
-    currentUser = user;
-
-    // Initialize demo data for new user
-    DataStore.generateDemoData();
-
-    onLoginSuccess(user);
-    Utils.showToast('Account created! Welcome! 🎉', 'success');
+      DataStore.setUser(user);
+      currentUser = user;
+      DataStore.generateDemoData();
+      onLoginSuccess(user);
+      Utils.showToast('Demo Account created! 🎉', 'success');
+    }
   }
 
   function demoLogin() {
@@ -146,9 +175,13 @@ const Auth = (() => {
     }
   }
 
-  function logout() {
+  async function logout() {
     currentUser = null;
     DataStore.clearUser();
+    
+    if (DataStore.isSupabaseConfigured()) {
+      await DataStore.supabaseLogout();
+    }
 
     // Show login, hide app
     document.getElementById('login-screen').style.display = '';
