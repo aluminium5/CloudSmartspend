@@ -316,11 +316,17 @@ const DataStore = (() => {
   }
 
   function init() {
-    if (!localStorage.getItem(STORAGE_KEYS.TRANSACTIONS)) generateDemoData();
+    const user = getUser();
+    const isDemo = !user || user.uid.startsWith('demo_user');
+    
+    // Only generate demo data for demo users
+    if (isDemo && !localStorage.getItem(STORAGE_KEYS.TRANSACTIONS)) {
+      generateDemoData();
+    }
     if (!localStorage.getItem(STORAGE_KEYS.BUDGETS)) setBudgets(getDefaultBudgets());
     
     // Background cloud fetch on app start if user is logged in
-    fetchCloudData();
+    if (!isDemo) fetchCloudData();
   }
 
   function clearAllData() {
@@ -331,17 +337,25 @@ const DataStore = (() => {
   // ---- Supabase Auth Wrappers ----
   async function supabaseSignUp(email, password, displayName) {
     if (!supabaseClient) throw new Error("Supabase is not configured.");
+    
+    // Clear any leftover demo data before creating a real account
+    clearAllData();
+    
     const { data, error } = await supabaseClient.auth.signUp({ 
       email, password,
       options: { data: { full_name: displayName } }
     });
     if (error) throw error;
-    if (data.session) await fetchCloudData(); // Sync if auto-logged in
+    if (data.session) await fetchCloudData();
     return data;
   }
   
   async function supabaseLogin(email, password) {
     if (!supabaseClient) throw new Error("Supabase is not configured.");
+    
+    // Clear demo data before pulling real user data
+    clearAllData();
+    
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) throw error;
     
