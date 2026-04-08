@@ -130,102 +130,6 @@ const Settings = (() => {
     Utils.showToast('All data cleared. Fresh demo data loaded.', 'info');
   }
 
-  function showEditProfile() {
-    const user = DataStore.getUser();
-    if (!user) return;
-
-    const nameInput = document.getElementById('edit-name');
-    const preview = document.getElementById('edit-avatar-preview');
-    
-    if (nameInput) nameInput.value = user.displayName || '';
-    if (preview) {
-      if (user.photoURL) {
-        preview.innerHTML = `<img src="${user.photoURL}" alt="Profile">`;
-      } else {
-        preview.textContent = (user.displayName || user.email || '?').charAt(0).toUpperCase();
-        preview.innerHTML = preview.textContent;
-      }
-    }
-
-    App.openModal('modal-edit-profile');
-  }
-
-  function handleProfilePic(input) {
-    if (!input.files || !input.files[0]) return;
-
-    const file = input.files[0];
-    const reader = new FileReader();
-
-    reader.onload = function(e) {
-      const img = new Image();
-      img.onload = function() {
-        // Compress and resize image using canvas
-        const canvas = document.createElement('canvas');
-        const MAX_SIZE = 120; // 120x120 for avatar
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_SIZE) {
-            height *= MAX_SIZE / width;
-            width = MAX_SIZE;
-          }
-        } else {
-          if (height > MAX_SIZE) {
-            width *= MAX_SIZE / height;
-            height = MAX_SIZE;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        const preview = document.getElementById('edit-avatar-preview');
-        if (preview) {
-          preview.innerHTML = `<img src="${dataUrl}" alt="Preview">`;
-          preview.setAttribute('data-new-photo', dataUrl);
-        }
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  async function saveProfile() {
-    const nameInput = document.getElementById('edit-name');
-    const preview = document.getElementById('edit-avatar-preview');
-    
-    const displayName = nameInput ? nameInput.value.trim() : '';
-    const photoURL = preview ? preview.getAttribute('data-new-photo') : null;
-
-    if (!displayName) {
-      Utils.showToast('Name cannot be empty', 'error');
-      return;
-    }
-
-    try {
-      Utils.showToast('Updating profile...', 'info');
-      
-      const updates = { displayName };
-      if (photoURL) updates.photoURL = photoURL;
-
-      await DataStore.updateUserProfile(updates);
-      
-      App.closeModal('modal-edit-profile');
-      Utils.showToast('Profile updated! ✨', 'success');
-      
-      // Update UI immediately
-      if (typeof Auth !== 'undefined') Auth.updateUserUI(DataStore.getUser());
-      
-    } catch (e) {
-      console.error(e);
-      Utils.showToast('Failed to update profile', 'error');
-    }
-  }
-
   return {
     init,
     showCurrencyModal,
@@ -234,9 +138,6 @@ const Settings = (() => {
     saveBudgets,
     exportData,
     confirmClearData,
-    clearData,
-    showEditProfile,
-    handleProfilePic,
-    saveProfile
+    clearData
   };
 })();

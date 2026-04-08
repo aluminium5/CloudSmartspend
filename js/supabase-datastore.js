@@ -405,36 +405,6 @@ const DataStore = (() => {
     return data;
   }
 
-  async function updateUserProfile(updates) {
-    if (!supabaseClient) {
-      // Handle local only update for demo
-      const user = getUser();
-      const updated = { ...user, ...updates };
-      setUser(updated);
-      return updated;
-    }
-
-    const { data, error } = await supabaseClient.auth.updateUser({
-      data: {
-        full_name: updates.displayName,
-        avatar_url: updates.photoURL
-      }
-    });
-
-    if (error) throw error;
-    
-    // Update local store as well
-    const user = getUser();
-    const updated = {
-      ...user,
-      displayName: updates.displayName || user.displayName,
-      photoURL: updates.photoURL || user.photoURL
-    };
-    setUser(updated);
-    notifyListeners('profile_updated', updated);
-    return updated;
-  }
-
   return {
     SUPABASE_URL,
     SUPABASE_KEY,
@@ -451,6 +421,6 @@ const DataStore = (() => {
     onDataChange,
     clearAllData,
     generateDemoData,
-    supabaseSignUp, supabaseLogin, supabaseLogout, supabaseGoogleLogin, updateUserProfile
+    supabaseSignUp, supabaseLogin, supabaseLogout, supabaseGoogleLogin
   };
 })();

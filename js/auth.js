@@ -158,20 +158,8 @@ const Auth = (() => {
     }
   }
 
-  async function onLoginSuccess(user) {
+  function onLoginSuccess(user) {
     currentUser = user;
-
-    // Update Supabase user identity metadata if available
-    if (DataStore.isSupabaseConfigured() && DataStore.supabase) {
-      try {
-        const { data: { user: sbUser } } = await DataStore.supabase.auth.getUser();
-        if (sbUser && sbUser.user_metadata) {
-          user.displayName = sbUser.user_metadata.full_name || user.displayName;
-          user.photoURL = sbUser.user_metadata.avatar_url || user.photoURL;
-          DataStore.setUser(user);
-        }
-      } catch (e) { console.error('Meta sync error:', e); }
-    }
 
     // Hide login, show app
     document.getElementById('login-screen').style.display = 'none';
@@ -193,35 +181,18 @@ const Auth = (() => {
   }
 
   function updateUserUI(user) {
-    if (!user) return;
     const initial = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
 
     // Top bar avatar
     const topbarAvatar = document.getElementById('topbar-avatar');
-    if (topbarAvatar) {
-      if (user.photoURL) {
-        topbarAvatar.innerHTML = `<img src="${user.photoURL}" alt="Avatar">`;
-        topbarAvatar.classList.add('has-image');
-      } else {
-        topbarAvatar.textContent = initial;
-        topbarAvatar.classList.remove('has-image');
-      }
-    }
+    if (topbarAvatar) topbarAvatar.textContent = initial;
 
     // Settings profile
     const settingsAvatar = document.getElementById('settings-avatar');
     const settingsName = document.getElementById('settings-name');
     const settingsEmail = document.getElementById('settings-email');
 
-    if (settingsAvatar) {
-      if (user.photoURL) {
-        settingsAvatar.innerHTML = `<img src="${user.photoURL}" alt="Avatar">`;
-        settingsAvatar.classList.add('has-image');
-      } else {
-        settingsAvatar.textContent = initial;
-        settingsAvatar.classList.remove('has-image');
-      }
-    }
+    if (settingsAvatar) settingsAvatar.textContent = initial;
     if (settingsName) settingsName.textContent = user.displayName || 'User';
     if (settingsEmail) settingsEmail.textContent = user.email;
 
@@ -289,7 +260,6 @@ const Auth = (() => {
     showLogin,
     showSignup,
     togglePassword,
-    updateUserUI,
     getUser
   };
 })();

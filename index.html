@@ -531,12 +531,7 @@
         <div class="settings-profile" id="settings-profile">
           <div class="settings-profile-avatar" id="settings-avatar">A</div>
           <div class="settings-profile-info">
-            <div class="flex-row gap-xs" style="align-items:center">
-              <div class="settings-profile-name" id="settings-name">Atharv</div>
-              <button class="settings-edit-btn" onclick="Settings.showEditProfile()" title="Edit Profile">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-              </button>
-            </div>
+            <div class="settings-profile-name" id="settings-name">Atharv</div>
             <div class="settings-profile-email" id="settings-email">demo@cloudsmartspend.app</div>
           </div>
         </div>
@@ -724,38 +719,6 @@
       <div class="flex-row gap-md">
         <button class="btn btn-secondary" style="flex:1" onclick="App.closeModal('modal-confirm-clear')">Cancel</button>
         <button class="btn btn-primary" style="flex:1;background:var(--danger)" onclick="Settings.clearData()">Delete All</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Edit Profile Modal -->
-  <div class="modal" id="modal-edit-profile">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title">Edit Profile</h2>
-        <button class="modal-close" onclick="App.closeModal('modal-edit-profile')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="flex-column gap-md items-center mb-lg">
-          <div class="edit-avatar-container" onclick="document.getElementById('profile-upload').click()">
-            <div class="settings-profile-avatar large" id="edit-avatar-preview">A</div>
-            <div class="edit-avatar-overlay">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="24"><path d="M3 4V1h2v3h3v2H5v3H3V6H0V4h3zm3 6V7h3V4h7l1.83 2H21c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V10h3zm7 9c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5-5 2.24-5 5 2.24 5 5 5zm-3-5c0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3-3 1.34-3 3z"/></svg>
-            </div>
-          </div>
-          <input type="file" id="profile-upload" hidden accept="image/*" onchange="Settings.handleProfilePic(this)">
-          <div class="text-sm text-secondary">Click to change picture</div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="edit-name">Display Name</label>
-          <input type="text" class="form-input" id="edit-name" placeholder="Enter your name">
-        </div>
-
-        <div class="flex-row gap-md mt-lg">
-          <button class="btn btn-secondary flex-1" onclick="App.closeModal('modal-edit-profile')">Cancel</button>
-          <button class="btn btn-primary flex-1" onclick="Settings.saveProfile()">Save Changes</button>
-        </div>
       </div>
     </div>
   </div>
