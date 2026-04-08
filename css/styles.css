@@ -2277,3 +2277,14 @@ h4 { font-size: 1rem; }
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
+
+/* Chart cards must be fully opaque in dark mode */
+[data-theme="dark"] .chart-card {
+  background: #1e293b;
+  backdrop-filter: none;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .card {
+  background: rgba(30, 41, 59, 0.85);
+}

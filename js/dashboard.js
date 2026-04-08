@@ -7,6 +7,22 @@ const Dashboard = (() => {
   let currentPeriod = 'month';
   let charts = {};
 
+  // Theme-aware chart colors
+  function chartColors() {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+      primary: dark ? '#818cf8' : '#5b5bf6',
+      primaryFill: dark ? 'rgba(129, 140, 248, 0.15)' : 'rgba(91, 91, 246, 0.08)',
+      grid: dark ? 'rgba(255,255,255,0.06)' : '#F3F4F6',
+      tick: dark ? '#94a3b8' : '#9CA3AF',
+      tickDark: dark ? '#cbd5e1' : '#4B5563',
+      tooltip: dark ? '#1e293b' : '#1F2937',
+      legend: dark ? '#94a3b8' : '#6B7280',
+      barInactive: dark ? 'rgba(129, 140, 248, 0.2)' : '#E0E7FF',
+      pointBorder: dark ? '#1e293b' : '#fff',
+    };
+  }
+
   function init() {
     render();
 
@@ -98,6 +114,7 @@ const Dashboard = (() => {
   function renderSpendingTrend(transactions, range) {
     const canvas = document.getElementById('chart-spending-trend');
     if (!canvas) return;
+    const cc = chartColors();
 
     // Group by day
     const dailySpend = {};
@@ -130,15 +147,15 @@ const Dashboard = (() => {
         datasets: [{
           label: 'Daily Spending',
           data,
-          borderColor: '#4F46E5',
-          backgroundColor: 'rgba(79, 70, 229, 0.08)',
+          borderColor: cc.primary,
+          backgroundColor: cc.primaryFill,
           borderWidth: 2.5,
           tension: 0.4,
           fill: true,
           pointRadius: 0,
           pointHoverRadius: 6,
-          pointHoverBackgroundColor: '#4F46E5',
-          pointHoverBorderColor: '#fff',
+          pointHoverBackgroundColor: cc.primary,
+          pointHoverBorderColor: cc.pointBorder,
           pointHoverBorderWidth: 2
         }]
       },
@@ -153,7 +170,7 @@ const Dashboard = (() => {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#1F2937',
+            backgroundColor: cc.tooltip,
             titleColor: '#fff',
             bodyColor: '#D1D5DB',
             padding: 12,
@@ -169,16 +186,16 @@ const Dashboard = (() => {
             grid: { display: false },
             ticks: {
               font: { size: 11, family: 'Inter' },
-              color: '#9CA3AF',
+              color: cc.tick,
               maxTicksLimit: 7
             }
           },
           y: {
             beginAtZero: true,
-            grid: { color: '#F3F4F6' },
+            grid: { color: cc.grid },
             ticks: {
               font: { size: 11, family: 'Inter' },
-              color: '#9CA3AF',
+              color: cc.tick,
               callback: (val) => Utils.formatCurrency(val)
             }
           }
@@ -190,6 +207,7 @@ const Dashboard = (() => {
   function renderCategoryBreakdown(transactions) {
     const canvas = document.getElementById('chart-category-breakdown');
     if (!canvas) return;
+    const cc = chartColors();
 
     const groups = Utils.groupByCategory(transactions);
     const categories = Object.keys(groups).sort((a, b) => groups[b].total - groups[a].total);
@@ -223,11 +241,11 @@ const Dashboard = (() => {
               usePointStyle: true,
               pointStyle: 'circle',
               font: { size: 11, family: 'Inter' },
-              color: '#6B7280'
+              color: cc.legend
             }
           },
           tooltip: {
-            backgroundColor: '#1F2937',
+            backgroundColor: cc.tooltip,
             padding: 12,
             cornerRadius: 8,
             callbacks: {
@@ -246,6 +264,7 @@ const Dashboard = (() => {
   function renderTopExpenses(transactions) {
     const canvas = document.getElementById('chart-top-expenses');
     if (!canvas) return;
+    const cc = chartColors();
 
     const sorted = [...transactions].sort((a, b) => b.amount - a.amount).slice(0, 5);
     const labels = sorted.map(t => t.vendor.length > 18 ? t.vendor.substring(0, 18) + '...' : t.vendor);
@@ -260,7 +279,7 @@ const Dashboard = (() => {
         labels,
         datasets: [{
           data,
-          backgroundColor: colors.map(c => c + '22'),
+          backgroundColor: colors.map(c => c + '33'),
           borderColor: colors,
           borderWidth: 2,
           borderRadius: 8,
@@ -275,7 +294,7 @@ const Dashboard = (() => {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#1F2937',
+            backgroundColor: cc.tooltip,
             padding: 12,
             cornerRadius: 8,
             callbacks: {
@@ -286,10 +305,10 @@ const Dashboard = (() => {
         scales: {
           x: {
             beginAtZero: true,
-            grid: { color: '#F3F4F6' },
+            grid: { color: cc.grid },
             ticks: {
               font: { size: 11, family: 'Inter' },
-              color: '#9CA3AF',
+              color: cc.tick,
               callback: (val) => Utils.formatCurrency(val)
             }
           },
@@ -297,7 +316,7 @@ const Dashboard = (() => {
             grid: { display: false },
             ticks: {
               font: { size: 11, family: 'Inter' },
-              color: '#4B5563'
+              color: cc.tickDark
             }
           }
         }

@@ -6,6 +6,22 @@
 const Analytics = (() => {
   let charts = {};
 
+  // Theme-aware chart colors
+  function chartColors() {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    return {
+      primary: dark ? '#818cf8' : '#5b5bf6',
+      primaryFill: dark ? 'rgba(129, 140, 248, 0.12)' : 'rgba(91, 91, 246, 0.05)',
+      grid: dark ? 'rgba(255,255,255,0.06)' : '#F3F4F6',
+      tick: dark ? '#94a3b8' : '#9CA3AF',
+      tooltip: dark ? '#1e293b' : '#1F2937',
+      legend: dark ? '#94a3b8' : '#6B7280',
+      barInactive: dark ? 'rgba(129, 140, 248, 0.2)' : '#E0E7FF',
+      predicted: dark ? '#a5b4fc' : '#A5B4FC',
+      pointBorder: dark ? '#1e293b' : '#fff',
+    };
+  }
+
   function init() {
     render();
 
@@ -52,6 +68,7 @@ const Analytics = (() => {
   function renderMonthlyComparison() {
     const canvas = document.getElementById('chart-monthly-comparison');
     if (!canvas) return;
+    const cc = chartColors();
 
     const allTx = DataStore.getTransactions();
 
@@ -84,7 +101,7 @@ const Analytics = (() => {
           label: 'Monthly Spending',
           data: months.map(m => m.total),
           backgroundColor: months.map((m, i) =>
-            i === months.length - 1 ? '#4F46E5' : '#E0E7FF'
+            i === months.length - 1 ? cc.primary : cc.barInactive
           ),
           borderRadius: 8,
           borderSkipped: false,
@@ -98,7 +115,7 @@ const Analytics = (() => {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#1F2937',
+            backgroundColor: cc.tooltip,
             padding: 12,
             cornerRadius: 8,
             callbacks: {
@@ -109,14 +126,14 @@ const Analytics = (() => {
         scales: {
           x: {
             grid: { display: false },
-            ticks: { font: { size: 11, family: 'Inter' }, color: '#9CA3AF' }
+            ticks: { font: { size: 11, family: 'Inter' }, color: cc.tick }
           },
           y: {
             beginAtZero: true,
-            grid: { color: '#F3F4F6' },
+            grid: { color: cc.grid },
             ticks: {
               font: { size: 11, family: 'Inter' },
-              color: '#9CA3AF',
+              color: cc.tick,
               callback: (val) => Utils.formatCurrency(val)
             }
           }
@@ -128,6 +145,7 @@ const Analytics = (() => {
   function renderCategoryTrends() {
     const canvas = document.getElementById('chart-category-trends');
     if (!canvas) return;
+    const cc = chartColors();
 
     const allTx = DataStore.getTransactions();
 
@@ -174,7 +192,7 @@ const Analytics = (() => {
         fill: true,
         pointRadius: 4,
         pointBackgroundColor: cat.color,
-        pointBorderColor: '#fff',
+        pointBorderColor: cc.pointBorder,
         pointBorderWidth: 2
       };
     });
@@ -203,11 +221,11 @@ const Analytics = (() => {
               usePointStyle: true,
               pointStyle: 'circle',
               font: { size: 11, family: 'Inter' },
-              color: '#6B7280'
+              color: cc.legend
             }
           },
           tooltip: {
-            backgroundColor: '#1F2937',
+            backgroundColor: cc.tooltip,
             padding: 12,
             cornerRadius: 8,
             callbacks: {
@@ -218,14 +236,14 @@ const Analytics = (() => {
         scales: {
           x: {
             grid: { display: false },
-            ticks: { font: { size: 11, family: 'Inter' }, color: '#9CA3AF' }
+            ticks: { font: { size: 11, family: 'Inter' }, color: cc.tick }
           },
           y: {
             beginAtZero: true,
-            grid: { color: '#F3F4F6' },
+            grid: { color: cc.grid },
             ticks: {
               font: { size: 11, family: 'Inter' },
-              color: '#9CA3AF',
+              color: cc.tick,
               callback: (val) => Utils.formatCurrency(val)
             }
           }
@@ -284,6 +302,7 @@ const Analytics = (() => {
   function renderPrediction() {
     const canvas = document.getElementById('chart-prediction');
     if (!canvas) return;
+    const cc = chartColors();
 
     const allTx = DataStore.getTransactions();
 
@@ -336,8 +355,8 @@ const Analytics = (() => {
           {
             label: 'Actual Spending',
             data: predictedData,
-            borderColor: '#4F46E5',
-            backgroundColor: 'rgba(79, 70, 229, 0.05)',
+            borderColor: cc.primary,
+            backgroundColor: cc.primaryFill,
             borderWidth: 2,
             tension: 0.4,
             fill: true,
@@ -347,7 +366,7 @@ const Analytics = (() => {
           {
             label: 'Predicted',
             data: predictionLine,
-            borderColor: '#A5B4FC',
+            borderColor: cc.predicted,
             borderWidth: 2,
             borderDash: [6, 4],
             tension: 0.4,
@@ -373,11 +392,11 @@ const Analytics = (() => {
               usePointStyle: true,
               pointStyle: 'circle',
               font: { size: 11, family: 'Inter' },
-              color: '#6B7280'
+              color: cc.legend
             }
           },
           tooltip: {
-            backgroundColor: '#1F2937',
+            backgroundColor: cc.tooltip,
             padding: 12,
             cornerRadius: 8,
             callbacks: {
@@ -393,16 +412,16 @@ const Analytics = (() => {
             grid: { display: false },
             ticks: {
               font: { size: 11, family: 'Inter' },
-              color: '#9CA3AF',
+              color: cc.tick,
               maxTicksLimit: 8
             }
           },
           y: {
             beginAtZero: true,
-            grid: { color: '#F3F4F6' },
+            grid: { color: cc.grid },
             ticks: {
               font: { size: 11, family: 'Inter' },
-              color: '#9CA3AF',
+              color: cc.tick,
               callback: (val) => Utils.formatCurrency(val)
             }
           }

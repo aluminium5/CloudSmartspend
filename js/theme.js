@@ -42,6 +42,10 @@ const ThemeToggle = (() => {
       document.documentElement.setAttribute('data-theme', 'dark');
       localStorage.setItem(STORAGE_KEY, 'dark');
     }
+
+    // Re-render charts so they pick up new theme colors
+    try { if (typeof Dashboard !== 'undefined') Dashboard.render(); } catch(e) {}
+    try { if (typeof Analytics !== 'undefined') Analytics.render(); } catch(e) {}
   }
 
   function isDarkMode() {
