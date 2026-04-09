@@ -116,7 +116,18 @@ const Auth = (() => {
         Utils.showToast('Account created! Please verify your email (or sign in if verification is disabled)', 'success');
         showLogin();
       } catch (e) {
-        Utils.showToast(e.message || 'Signup failed', 'danger');
+        console.error('Signup Error:', e);
+        
+        let errorMsg = e.message || 'Signup failed';
+        
+        // Handle common Supabase error codes or messages
+        if (e.status === 429 || (e.message && e.message.includes('rate limit'))) {
+          errorMsg = 'Too many requests. Please wait about 30 seconds and try again.';
+        } else if (e.message && e.message.includes('already registered')) {
+          errorMsg = 'This email is already registered. Please sign in instead.';
+        }
+        
+        Utils.showToast(errorMsg, 'danger');
       } finally {
         btn.disabled = false;
         btn.textContent = 'Create Account';
