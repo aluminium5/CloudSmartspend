@@ -3,10 +3,8 @@
  * Handles the financial advice chatbot logic and UI interactions.
  */
 const AIAdvisor = (function() {
-  const chatWindow = document.getElementById('ai-chat-window');
-  const chatBtn = document.getElementById('ai-chat-btn');
-  const chatMessages = document.getElementById('ai-chat-messages');
-  const chatInput = document.getElementById('ai-chat-input');
+  // Elements initialized after DOM is ready
+  let chatWindow, chatBtn, chatMessages, chatInput;
   
   // Settings
   let GROQ_API_KEY = localStorage.getItem('GROQ_API_KEY') || '';
@@ -16,7 +14,22 @@ const AIAdvisor = (function() {
   Keep responses under 3 paragraphs unless asked for a detailed breakdown. 
   Focus on budgeting, savings, and smart investing. If the user's question is not about finance, politely redirect them back to financial topics.`;
 
+  // Initialize elements when DOM is ready
+  function init() {
+    chatWindow = document.getElementById('ai-chat-window');
+    chatBtn = document.getElementById('ai-chat-btn');
+    chatMessages = document.getElementById('ai-chat-messages');
+    chatInput = document.getElementById('ai-chat-input');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
   function toggle() {
+    if (!chatWindow) return;
     if (chatWindow.classList.contains('active')) {
       close();
     } else {
@@ -25,6 +38,7 @@ const AIAdvisor = (function() {
   }
 
   function open() {
+    if (!chatWindow) return;
     chatWindow.classList.add('active');
     chatBtn.style.display = 'none';
     chatInput.focus();
@@ -35,11 +49,13 @@ const AIAdvisor = (function() {
   }
 
   function close() {
+    if (!chatWindow) return;
     chatWindow.classList.remove('active');
     chatBtn.style.display = 'flex';
   }
 
   function addMessage(text, sender) {
+    if (!chatMessages) return;
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${sender}`;
     msgDiv.textContent = text;
@@ -48,6 +64,7 @@ const AIAdvisor = (function() {
   }
 
   async function send() {
+    if (!chatInput) return;
     const text = chatInput.value.trim();
     if (!text) return;
 
@@ -124,4 +141,5 @@ const AIAdvisor = (function() {
 
   return { toggle, close, send, promptForKey, updateKey };
 })();
+
 
