@@ -7,8 +7,8 @@ const AIAdvisor = (function() {
   let chatWindow, chatBtn, chatMessages, chatInput;
   
   // Settings
-  let GROQ_API_KEY = localStorage.getItem('GROQ_API_KEY') || '';
-  const MODEL = 'llama3-8b-8192';
+  let GROQ_API_KEY = (localStorage.getItem('GROQ_API_KEY') || '').trim();
+  const MODEL = 'llama-3.3-70b-versatile';
   const SYSTEM_PROMPT = `You are the "SmartSpend Advisor", a premium AI financial assistant. 
   Your goal is to provide expert, concise, and professional financial advice. 
   Keep responses under 3 paragraphs unless asked for a detailed breakdown. 
@@ -69,7 +69,7 @@ const AIAdvisor = (function() {
     if (!text) return;
 
     if (!GROQ_API_KEY) {
-      GROQ_API_KEY = localStorage.getItem('GROQ_API_KEY');
+      GROQ_API_KEY = (localStorage.getItem('GROQ_API_KEY') || '').trim();
       if (!GROQ_API_KEY) {
         promptForKey();
         return;
@@ -92,7 +92,7 @@ const AIAdvisor = (function() {
       addMessage(response, 'ai');
     } catch (error) {
       chatMessages.removeChild(typingMsg);
-      addMessage("I'm sorry, I encountered an error connecting to Llama 3. Please check your API key and connection.", 'ai');
+      addMessage(`I encountered an error: ${error.message}. Please check your API key and connection.`, 'ai');
       console.error("Groq API Error:", error);
     }
   }
@@ -127,15 +127,17 @@ const AIAdvisor = (function() {
   function promptForKey() {
     const key = prompt("Please enter your Groq API Key (get it for free at console.groq.com):");
     if (key) {
-      localStorage.setItem('GROQ_API_KEY', key);
-      GROQ_API_KEY = key;
+      const trimmedKey = key.trim();
+      localStorage.setItem('GROQ_API_KEY', trimmedKey);
+      GROQ_API_KEY = trimmedKey;
       addMessage("API Key saved! You can now start chatting with Llama 3.", 'ai');
     }
   }
 
   function updateKey(newKey) {
-    localStorage.setItem('GROQ_API_KEY', newKey);
-    GROQ_API_KEY = newKey;
+    const trimmedKey = (newKey || '').trim();
+    localStorage.setItem('GROQ_API_KEY', trimmedKey);
+    GROQ_API_KEY = trimmedKey;
     alert("API Key updated successfully!");
   }
 
